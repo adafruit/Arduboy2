@@ -222,12 +222,12 @@
 #define BUTTON_LATCH 50
 // bit values for button states
 // these are determined by the buttonsState() function, reading the shift reg
-#define LEFT_BUTTON   0
-#define UP_BUTTON     1
-#define DOWN_BUTTON   2
-#define RIGHT_BUTTON  3
-#define A_BUTTON      6
-#define B_BUTTON      7
+#define LEFT_BUTTON   0x01
+#define UP_BUTTON     0x02
+#define DOWN_BUTTON   0x04
+#define RIGHT_BUTTON  0x08
+#define A_BUTTON      0x40
+#define B_BUTTON      0x80
 #define TXLED1        digitalWrite(13, HIGH)
 #define TXLED0        digitalWrite(13, LOW)
 #define RXLED1        digitalWrite(13, HIGH)

@@ -13,6 +13,7 @@
   uint16_t framebuf[WIDTH*HEIGHT];
   #define X_OFFSET  16
   #define Y_OFFSET  32
+  bool firstframe = true; // helps us with our first DMA transfer
 #else
   #include <avr/wdt.h>
 #endif
@@ -205,6 +206,17 @@ void Arduboy2Core::bootPins()
   // Port F outputs (none)
   // Speaker: Not set here. Controlled by audio class
 
+#elif defined(__SAMD51__)
+  // Start NeoPixels
+  strip.begin();
+  strip.setBrightness(0);
+  strip.show(); // Initialize all pixels to 'off'
+  // Init button latch
+  pinMode(BUTTON_CLOCK, OUTPUT);
+  digitalWrite(BUTTON_CLOCK, HIGH);
+  pinMode(BUTTON_LATCH, OUTPUT);
+  digitalWrite(BUTTON_LATCH, HIGH);
+  pinMode(BUTTON_DATA, INPUT);
 #endif
 }
 
@@ -214,7 +226,7 @@ void Arduboy2Core::bootOLED()
   Serial.println("Booting TFT");
   tft.initR(INITR_BLACKTAB);
   tft.setRotation(1);
-  tft.fillScreen(ST77XX_RED);
+  tft.fillScreen(0x101010);
   pinMode(TFT_LITE, OUTPUT);
   digitalWrite(TFT_LITE, HIGH);
 #else
@@ -384,10 +396,14 @@ void Arduboy2Core::paintScreen(uint8_t image[], bool clear)
     }
   }
   // now draw it!
+  if (! firstframe) {
+    tft.endWrite(); // End transaction from any prior callback
+    firstframe = false;
+  }
   tft.startWrite(); // Start new display transaction
   tft.setAddrWindow(X_OFFSET, Y_OFFSET, WIDTH, HEIGHT);
-  tft.writePixels(framebuf,  WIDTH*HEIGHT, true);
-  tft.endWrite(); // End transaction from any prior callback
+  tft.writePixels(framebuf,  WIDTH*HEIGHT, false); // immediate return;
+  
   // clear out the image
   if (clear) {
     memset(image, 0x0, WIDTH*HEIGHT/8);
@@ -655,6 +671,23 @@ uint8_t Arduboy2Core::buttonsState()
   if (bitRead(A_BUTTON_PORTIN, A_BUTTON_BIT) == 0) { buttons |= A_BUTTON; }
   // B
   if (bitRead(B_BUTTON_PORTIN, B_BUTTON_BIT) == 0) { buttons |= B_BUTTON; }
+
+#elif defined(__SAMD51__)
+  // PyBadge uses a latch to read 8 bits
+  digitalWrite(BUTTON_LATCH, LOW);
+  delayMicroseconds(1);
+  digitalWrite(BUTTON_LATCH, HIGH);
+  delayMicroseconds(1);
+  
+  for(int i = 0; i < 8; i++) {
+    buttons <<= 1;
+    //Serial.print(digitalRead(BUTTON_DATA)); Serial.print(", ");
+    buttons |= digitalRead(BUTTON_DATA);
+    digitalWrite(BUTTON_CLOCK, HIGH);
+    delayMicroseconds(1);
+    digitalWrite(BUTTON_CLOCK, LOW);
+    delayMicroseconds(1);
+  }
 #endif
 
   return buttons;
