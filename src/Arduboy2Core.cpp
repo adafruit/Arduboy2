@@ -209,7 +209,7 @@ void Arduboy2Core::bootPins()
 #elif defined(__SAMD51__)
   // Start NeoPixels
   strip.begin();
-  strip.setBrightness(0);
+  strip.setBrightness(100);
   strip.show(); // Initialize all pixels to 'off'
   // Init button latch
   pinMode(BUTTON_CLOCK, OUTPUT);
@@ -559,6 +559,12 @@ void Arduboy2Core::setRGBled(uint8_t red, uint8_t green, uint8_t blue)
   (void)red;    // parameter unused
   (void)green;  // parameter unused
   bitWrite(BLUE_LED_PORT, BLUE_LED_BIT, blue ? RGB_ON : RGB_OFF);
+#elif defined(__SAMD51__)
+  neopixel_color = (uint32_t)red << 16;
+  neopixel_color |= (uint32_t)green << 8;
+  neopixel_color |= (uint32_t)blue;
+  strip.fill(neopixel_color);
+  strip.show();
 #endif
 }
 
@@ -583,6 +589,19 @@ void Arduboy2Core::setRGBled(uint8_t color, uint8_t val)
   {
     bitWrite(BLUE_LED_PORT, BLUE_LED_BIT, val ? RGB_ON : RGB_OFF);
   }
+#elif defined(__SAMD51__)
+  if (color == RED_LED) {
+    neopixel_color &= 0x00FFFF;
+    neopixel_color |= (uint32_t)val << 16;
+  } else if (color == GREEN_LED) {
+    neopixel_color &= 0xFF00FF;
+    neopixel_color |= (uint32_t)val << 8;
+  } else if (color == BLUE_LED) {
+    neopixel_color &= 0xFFFF00;
+    neopixel_color |= (uint32_t)val;
+  }
+  strip.fill(neopixel_color);
+  strip.show();
 #endif
 }
 
@@ -606,6 +625,12 @@ void Arduboy2Core::digitalWriteRGB(uint8_t red, uint8_t green, uint8_t blue)
   (void)red;    // parameter unused
   (void)green;  // parameter unused
   bitWrite(BLUE_LED_PORT, BLUE_LED_BIT, blue);
+#elif defined(__SAMD51__)
+  neopixel_color = (uint32_t)red << 16;
+  neopixel_color |= (uint32_t)green << 8;
+  neopixel_color |= (uint32_t)blue;
+  strip.fill(neopixel_color);
+  strip.show();
 #endif
 }
 
@@ -632,17 +657,19 @@ void Arduboy2Core::digitalWriteRGB(uint8_t color, uint8_t val)
   }
 #elif defined(__SAMD51__)
   if (color == RED_LED) {
-    if (val)   neopixel_color |= 0xFF0000;
+    if (!val)   neopixel_color |= 0xFF0000;
     else       neopixel_color &= ~0xFF0000;
   }
   if (color == GREEN_LED) {
-    if (val)   neopixel_color |= 0x00FF00;
+    if (!val)   neopixel_color |= 0x00FF00;
     else       neopixel_color &= ~0x00FF00;
   }
   if (color == BLUE_LED) {
-    if (val)   neopixel_color |= 0x0000FF;
+    if (!val)   neopixel_color |= 0x0000FF;
     else       neopixel_color &= ~0x0000FF;
   }
+  strip.fill(neopixel_color);
+  strip.show();
 #endif
 }
 
