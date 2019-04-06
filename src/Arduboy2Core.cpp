@@ -223,7 +223,6 @@ void Arduboy2Core::bootPins()
 void Arduboy2Core::bootOLED()
 {
 #ifdef __SAMD51__
-  Serial.println("Booting TFT");
   tft.initR(INITR_BLACKTAB);
   tft.setRotation(1);
   tft.fillScreen(0x101010);
@@ -363,7 +362,7 @@ void Arduboy2Core::paint8Pixels(uint8_t pixels)
 void Arduboy2Core::paintScreen(const uint8_t *image)
 {
 #if defined(__SAMD51__)
-  Serial.println("paintconstscreen");
+  paintScreen(image, false);
 #else
   for (int i = 0; i < (HEIGHT*WIDTH)/8; i++)
   {
@@ -383,7 +382,6 @@ void Arduboy2Core::paintScreen(uint8_t image[], bool clear)
 #if defined(__SAMD51__) 
   uint16_t color;
   for (uint8_t y=0; y<HEIGHT; y++) {
-    //Serial.print("Y: "); Serial.println(y);
     uint8_t row = y / 8;
     uint8_t bit_position = y % 8;
     for (uint8_t x=0; x<WIDTH; x++) {
@@ -391,8 +389,6 @@ void Arduboy2Core::paintScreen(uint8_t image[], bool clear)
       if (color)
 	color = 0xFFFF;
       framebuf[x+y*WIDTH] = color;
-      //Serial.print("Draw pixel "); Serial.print(x); Serial.print(","); Serial.print(y); Serial.print(":"); Serial.println(color, HEX);
-      //tft.drawPixel(x, y, color);
     }
   }
   // now draw it!
@@ -479,7 +475,7 @@ void Arduboy2Core::paintScreen(uint8_t image[], bool clear)
 void Arduboy2Core::blank()
 {
 #ifdef __SAMD51__
-  Serial.print("Blank screen");
+  tft.fill(0x00);
 #else
   for (int i = 0; i < (HEIGHT*WIDTH)/8; i++)
     SPItransfer(0x00);
@@ -501,7 +497,7 @@ void Arduboy2Core::sendLCDCommand(uint8_t command)
 void Arduboy2Core::invert(bool inverse)
 {
 #ifdef __SAMD51__
-  Serial.println("invert");
+  tft.invert(inverse);
 #else
   sendLCDCommand(inverse ? OLED_PIXELS_INVERTED : OLED_PIXELS_NORMAL);
 #endif
@@ -512,7 +508,10 @@ void Arduboy2Core::invert(bool inverse)
 void Arduboy2Core::allPixelsOn(bool on)
 {
 #ifdef __SAMD51__
-  Serial.println("allPixelsOn");
+  if (on) 
+    tft.fill(0xFF);
+  else
+    display();
 #else
   sendLCDCommand(on ? OLED_ALL_PIXELS_ON : OLED_PIXELS_FROM_RAM);
 #endif
@@ -708,7 +707,6 @@ uint8_t Arduboy2Core::buttonsState()
   
   for(int i = 0; i < 8; i++) {
     buttons <<= 1;
-    //Serial.print(digitalRead(BUTTON_DATA)); Serial.print(", ");
     buttons |= digitalRead(BUTTON_DATA);
     digitalWrite(BUTTON_CLOCK, HIGH);
     delayMicroseconds(1);
