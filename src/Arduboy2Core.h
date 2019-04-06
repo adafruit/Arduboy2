@@ -213,6 +213,8 @@
 #define TFT_DC       45       // Display D/C Arduino pin number
 #define TFT_RST      46       // Display reset Arduino pin number
 #define TFT_LITE     47
+#define PIN_SPEAKER_1   A0
+#define SPEAKER_ENABLE  51
 #define NEOPIXEL_PIN  8
 #define RED_LED       0
 #define GREEN_LED     1
@@ -233,7 +235,6 @@
 #define RXLED1        digitalWrite(13, HIGH)
 #define RXLED0        digitalWrite(13, LOW)
 #define _BV(x)        1 << x
-#define PIN_SPEAKER_1 A0
 // -----------------------
 #endif
 // --------------------

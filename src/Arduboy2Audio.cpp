@@ -16,7 +16,7 @@ void Arduboy2Audio::on()
   bitSet(SPEAKER_1_DDR, SPEAKER_1_BIT);
   bitSet(SPEAKER_2_DDR, SPEAKER_2_BIT);
 #elif defined(__SAMD51__)
-  // nothing yet
+  digitalWrite(SPEAKER_ENABLE, HIGH);
 #else
   bitSet(SPEAKER_1_DDR, SPEAKER_1_BIT);
 #endif
@@ -31,7 +31,7 @@ void Arduboy2Audio::off()
   bitClear(SPEAKER_1_DDR, SPEAKER_1_BIT);
   bitClear(SPEAKER_2_DDR, SPEAKER_2_BIT);
 #elif defined(__SAMD51__)
-  // nothing yet
+  digitalWrite(SPEAKER_ENABLE, LOW);
 #else
   bitClear(SPEAKER_1_DDR, SPEAKER_1_BIT);
 #endif
@@ -54,7 +54,10 @@ void Arduboy2Audio::saveOnOff()
 
 void Arduboy2Audio::begin()
 {
-#if !defined(__SAMD51__)
+#if defined(__SAMD51__)
+  pinMode(SPEAKER_ENABLE, OUTPUT);
+  on();
+#else
   if (EEPROM.read(EEPROM_AUDIO_ON_OFF))
     on();
   else

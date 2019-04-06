@@ -7,7 +7,43 @@
 #include <Arduino.h>
 #include "Arduboy2Beep.h"
 
-#if !defined(AB_DEVKIT) && !defined(__SAMD51__)
+#if defined(__SAMD51__)
+uint8_t BeepPin1::duration = 0;
+
+void BeepPin1::begin()
+{
+  pinMode(A0, OUTPUT);
+  digitalWrite(A0, LOW);
+}
+
+void BeepPin1::tone(uint16_t count)
+{
+  Serial.print("Tone: "); Serial.println(count);
+  BeepPin1::tone(count, 0);
+}
+
+void BeepPin1::tone(uint16_t count, uint8_t dur)
+{
+  Serial.print("ToneDur: "); Serial.println(count);
+  ::tone(A0, count, 0);
+  duration = dur;
+}
+
+void BeepPin1::timer()
+{
+  if (duration && (--duration == 0)) {
+    noTone();
+  }
+}
+
+void BeepPin1::noTone()
+{
+  Serial.println("noTone");
+  ::noTone(A0);
+}
+
+
+#elif !defined(AB_DEVKIT)
 
 // Speaker pin 1, Timer 3A, Port C bit 6, Arduino pin 5
 
@@ -46,7 +82,6 @@ void BeepPin1::noTone()
 
 
 // Speaker pin 2, Timer 4A, Port C bit 7, Arduino pin 13
-
 uint8_t BeepPin2::duration = 0;
 
 void BeepPin2::begin()

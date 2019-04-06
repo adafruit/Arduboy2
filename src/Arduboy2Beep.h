@@ -247,10 +247,15 @@ class BeepPin1
    * sketch's code size unless the sketch also uses floating point math for
    * other purposes.
    */
+#if defined(__SAMD51__)
+  // on samd51 we use tone() so dont do any conversion!
+  static constexpr uint16_t freq(const float hz) { return hz; }
+#else
   static constexpr uint16_t freq(const float hz)
   {
     return (uint16_t) (((F_CPU / 8 / 2) + (hz / 2)) / hz) - 1;
   }
+#endif
 };
 
 
