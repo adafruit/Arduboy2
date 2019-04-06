@@ -8,7 +8,10 @@
 #define ARDUBOY2_AUDIO_H
 
 #include <Arduino.h>
-#include <EEPROM.h>
+#ifdef __SAMD51__
+#else
+  #include <EEPROM.h>
+#endif
 
 /** \brief
  * Provide speaker and sound control.

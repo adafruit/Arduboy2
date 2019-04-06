@@ -8,9 +8,13 @@
 #define ARDUBOY2_CORE_H
 
 #include <Arduino.h>
-#include <avr/power.h>
-#include <avr/sleep.h>
-
+#ifdef __SAMD51__
+#include <Adafruit_NeoPixel.h>
+#include <Adafruit_ST7735.h>
+#else
+  #include <avr/power.h>
+  #include <avr/sleep.h>
+#endif 
 
 // main hardware compile flags
 
@@ -27,7 +31,7 @@
  *     // #define ARDUBOY_10
  *     #define AB_DEVKIT
  */
-#define ARDUBOY_10   //< compile for the production Arduboy v1.0
+// #define ARDUBOY_10   //< compile for the production Arduboy v1.0
 // #define AB_DEVKIT    //< compile for the official dev kit
 #endif
 
@@ -203,6 +207,34 @@
 //
 // Reference: https://github.com/Arduboy/Arduboy/issues/108
 
+#elif defined(__SAMD51__)
+
+#define TFT_CS       44       // Display CS Arduino pin number
+#define TFT_DC       45       // Display D/C Arduino pin number
+#define TFT_RST      46       // Display reset Arduino pin number
+#define TFT_LITE     47
+#define NEOPIXEL_PIN  8
+#define RED_LED       0
+#define GREEN_LED     1
+#define BLUE_LED      2
+#define BUTTON_CLOCK 48
+#define BUTTON_DATA  49
+#define BUTTON_LATCH 50
+// bit values for button states
+// these are determined by the buttonsState() function, reading the shift reg
+#define LEFT_BUTTON   0
+#define UP_BUTTON     1
+#define DOWN_BUTTON   2
+#define RIGHT_BUTTON  3
+#define A_BUTTON      6
+#define B_BUTTON      7
+#define TXLED1        digitalWrite(13, HIGH)
+#define TXLED0        digitalWrite(13, LOW)
+#define RXLED1        digitalWrite(13, HIGH)
+#define RXLED0        digitalWrite(13, LOW)
+#define _BV(x)        1 << x
+#define PIN_SPEAKER_1 A0
+// -----------------------
 #endif
 // --------------------
 

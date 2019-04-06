@@ -5,8 +5,17 @@
  */
 
 #include "Arduboy2Core.h"
-
-#include <avr/wdt.h>
+#ifdef __SAMD51__
+  Adafruit_ST7735 tft = Adafruit_ST7735(&SPI1, TFT_CS,  TFT_DC, TFT_RST);
+  Adafruit_NeoPixel strip = Adafruit_NeoPixel(5, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+  uint32_t neopixel_color = 0;
+  // define a framebuffer (yeahhhh...)
+  uint16_t framebuf[WIDTH*HEIGHT];
+  #define X_OFFSET  16
+  #define Y_OFFSET  32
+#else
+  #include <avr/wdt.h>
+#endif
 
 const uint8_t PROGMEM lcdBootProgram[] = {
   // boot defaults are commented out but left here in case they
@@ -82,13 +91,17 @@ void Arduboy2Core::boot()
   setCPUSpeed8MHz();
   #endif
 
+  bootPins();
+#ifdef __SAMD51__
+  Serial.begin(115200);
+  bootOLED();
+#else
   // Select the ADC input here so a delay isn't required in initRandomSeed()
   ADMUX = RAND_SEED_IN_ADMUX;
-
-  bootPins();
   bootSPI();
   bootOLED();
   bootPowerSaving();
+#endif
 }
 
 #ifdef ARDUBOY_SET_CPU_8MHZ
@@ -197,6 +210,14 @@ void Arduboy2Core::bootPins()
 
 void Arduboy2Core::bootOLED()
 {
+#ifdef __SAMD51__
+  Serial.println("Booting TFT");
+  tft.initR(INITR_BLACKTAB);
+  tft.setRotation(1);
+  tft.fillScreen(ST77XX_RED);
+  pinMode(TFT_LITE, OUTPUT);
+  digitalWrite(TFT_LITE, HIGH);
+#else
   // reset the display
   delayShort(5); // reset pin should be low here. let it stay low a while
   bitSet(RST_PORT, RST_BIT); // set high to come out of reset
@@ -212,7 +233,10 @@ void Arduboy2Core::bootOLED()
     SPItransfer(pgm_read_byte(lcdBootProgram + i));
   }
   LCDDataMode();
+#endif
 }
+
+#if !defined(__SAMD51__)
 
 void Arduboy2Core::LCDDataMode()
 {
@@ -246,13 +270,15 @@ void Arduboy2Core::SPItransfer(uint8_t data)
   while (!(SPSR & _BV(SPIF))) { } // wait
 }
 
+#endif  // samd51 can just use GFX library to manage the display
+
 void Arduboy2Core::safeMode()
 {
   if (buttonsState() == UP_BUTTON)
   {
     digitalWriteRGB(RED_LED, RGB_ON);
 
-#ifndef ARDUBOY_CORE // for Arduboy core timer 0 should remain enabled
+#if !defined(ARDUBOY_CORE) && !defined(__SAMD51__) // for Arduboy core timer 0 should remain enabled
     // prevent the bootloader magic number from being overwritten by timer 0
     // when a timer variable overlaps the magic number location
     power_timer0_disable();
@@ -267,29 +293,37 @@ void Arduboy2Core::safeMode()
 
 void Arduboy2Core::idle()
 {
+#if !defined(__SAMD51__)
   SMCR = _BV(SE); // select idle mode and enable sleeping
   sleep_cpu();
   SMCR = 0; // disable sleeping
+#endif
 }
 
 void Arduboy2Core::bootPowerSaving()
 {
+#if !defined(__SAMD51__)
   // disable Two Wire Interface (I2C) and the ADC
   // All other bits will be written with 0 so will be enabled
   PRR0 = _BV(PRTWI) | _BV(PRADC);
   // disable USART1
   PRR1 |= _BV(PRUSART1);
+#endif
 }
 
 // Shut down the display
 void Arduboy2Core::displayOff()
 {
+#if defined(__SAMD51__)
+    digitalWrite(TFT_LITE, LOW);
+#else
   LCDCommandMode();
   SPItransfer(0xAE); // display off
   SPItransfer(0x8D); // charge pump:
   SPItransfer(0x10); //   disable
   delayShort(250);
   bitClear(RST_PORT, RST_BIT); // set display reset pin low (reset state)
+#endif
 }
 
 // Restart the display after a displayOff()
@@ -307,15 +341,23 @@ uint8_t Arduboy2Core::height() { return HEIGHT; }
 
 void Arduboy2Core::paint8Pixels(uint8_t pixels)
 {
+#if defined(__SAMD51__)
+  Serial.println("paint8pixels");
+#else
   SPItransfer(pixels);
+#endif
 }
 
 void Arduboy2Core::paintScreen(const uint8_t *image)
 {
+#if defined(__SAMD51__)
+  Serial.println("paintconstscreen");
+#else
   for (int i = 0; i < (HEIGHT*WIDTH)/8; i++)
   {
     SPItransfer(pgm_read_byte(image + i));
   }
+#endif
 }
 
 // paint from a memory buffer, this should be FAST as it's likely what
@@ -326,6 +368,32 @@ void Arduboy2Core::paintScreen(const uint8_t *image)
 // It is specifically tuned for a 16MHz CPU clock and SPI clocking at 8MHz.
 void Arduboy2Core::paintScreen(uint8_t image[], bool clear)
 {
+#if defined(__SAMD51__) 
+  uint16_t color;
+  for (uint8_t y=0; y<HEIGHT; y++) {
+    //Serial.print("Y: "); Serial.println(y);
+    uint8_t row = y / 8;
+    uint8_t bit_position = y % 8;
+    for (uint8_t x=0; x<WIDTH; x++) {
+      color = image[(row*WIDTH) + x] & _BV(bit_position);
+      if (color)
+	color = 0xFFFF;
+      framebuf[x+y*WIDTH] = color;
+      //Serial.print("Draw pixel "); Serial.print(x); Serial.print(","); Serial.print(y); Serial.print(":"); Serial.println(color, HEX);
+      //tft.drawPixel(x, y, color);
+    }
+  }
+  // now draw it!
+  tft.startWrite(); // Start new display transaction
+  tft.setAddrWindow(X_OFFSET, Y_OFFSET, WIDTH, HEIGHT);
+  tft.writePixels(framebuf,  WIDTH*HEIGHT, true);
+  tft.endWrite(); // End transaction from any prior callback
+  // clear out the image
+  if (clear) {
+    memset(image, 0x0, WIDTH*HEIGHT/8);
+  }
+
+#else
   uint16_t count;
 
   asm volatile (
@@ -349,6 +417,7 @@ void Arduboy2Core::paintScreen(uint8_t image[], bool clear)
       [len_lsb] "M"   (WIDTH * (HEIGHT / 8 * 2) & 0xFF), // 2: for delay loop multiplier
       [clear]   "r"   (clear)
   );
+#endif
 }
 #if 0
 // For reference, this is the "closed loop" C++ version of paintScreen()
@@ -393,41 +462,64 @@ void Arduboy2Core::paintScreen(uint8_t image[], bool clear)
 
 void Arduboy2Core::blank()
 {
+#ifdef __SAMD51__
+  Serial.print("Blank screen");
+#else
   for (int i = 0; i < (HEIGHT*WIDTH)/8; i++)
     SPItransfer(0x00);
+#endif
 }
 
 void Arduboy2Core::sendLCDCommand(uint8_t command)
 {
+#ifdef __SAMD51__
+#else
   LCDCommandMode();
   SPItransfer(command);
   LCDDataMode();
+#endif
 }
 
 // invert the display or set to normal
 // when inverted, a pixel set to 0 will be on
 void Arduboy2Core::invert(bool inverse)
 {
+#ifdef __SAMD51__
+  Serial.println("invert");
+#else
   sendLCDCommand(inverse ? OLED_PIXELS_INVERTED : OLED_PIXELS_NORMAL);
+#endif
 }
 
 // turn all display pixels on, ignoring buffer contents
 // or set to normal buffer display
 void Arduboy2Core::allPixelsOn(bool on)
 {
+#ifdef __SAMD51__
+  Serial.println("allPixelsOn");
+#else
   sendLCDCommand(on ? OLED_ALL_PIXELS_ON : OLED_PIXELS_FROM_RAM);
+#endif
 }
 
 // flip the display vertically or set to normal
 void Arduboy2Core::flipVertical(bool flipped)
 {
+#ifdef __SAMD51__
+  Serial.println("flipVertical");
+#else
   sendLCDCommand(flipped ? OLED_VERTICAL_FLIPPED : OLED_VERTICAL_NORMAL);
+#endif
 }
 
 // flip the display horizontally or set to normal
 void Arduboy2Core::flipHorizontal(bool flipped)
 {
+#ifdef __SAMD51__
+  Serial.println("flipHorizontal");
+#else
   sendLCDCommand(flipped ? OLED_HORIZ_FLIPPED : OLED_HORIZ_NORMAL);
+#endif
 }
 
 /* RGB LED */
@@ -522,6 +614,19 @@ void Arduboy2Core::digitalWriteRGB(uint8_t color, uint8_t val)
   {
     bitWrite(BLUE_LED_PORT, BLUE_LED_BIT, val);
   }
+#elif defined(__SAMD51__)
+  if (color == RED_LED) {
+    if (val)   neopixel_color |= 0xFF0000;
+    else       neopixel_color &= ~0xFF0000;
+  }
+  if (color == GREEN_LED) {
+    if (val)   neopixel_color |= 0x00FF00;
+    else       neopixel_color &= ~0x00FF00;
+  }
+  if (color == BLUE_LED) {
+    if (val)   neopixel_color |= 0x0000FF;
+    else       neopixel_color &= ~0x0000FF;
+  }
 #endif
 }
 
@@ -563,6 +668,7 @@ void Arduboy2Core::delayShort(uint16_t ms)
 
 void Arduboy2Core::exitToBootloader()
 {
+#if !defined(__SAMD51__)
   cli();
   // set bootloader magic key
   // storing two uint8_t instead of one uint16_t saves an instruction
@@ -573,13 +679,14 @@ void Arduboy2Core::exitToBootloader()
   wdt_reset();
   WDTCSR = (_BV(WDCE) | _BV(WDE));
   WDTCSR = _BV(WDE);
+#endif
   while (true) { }
 }
 
 // Replacement main() that eliminates the USB stack code.
 // Used by the ARDUBOY_NO_USB macro. This should not be called
 // directly from a sketch.
-
+#if !defined(__SAMD51__) // not available for SAM chips
 void Arduboy2Core::mainNoUSB()
 {
   // disable USB
@@ -633,4 +740,4 @@ void Arduboy2Core::mainNoUSB()
 
 //  return 0;
 }
-
+#endif
