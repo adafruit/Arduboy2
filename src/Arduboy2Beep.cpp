@@ -8,7 +8,6 @@
 #include "Arduboy2Beep.h"
 
 #if defined(__SAMD51__)
-#include <SD.h>
 #include <Audio.h>
 
 AudioSynthWaveformSine sine1, sine2;
