@@ -225,7 +225,7 @@ void Arduboy2Core::bootOLED()
 #ifdef __SAMD51__
   tft.initR(INITR_BLACKTAB);
   tft.setRotation(1);
-  tft.fillScreen(0x101010);
+  tft.fillScreen(0x7BEF);
   pinMode(TFT_LITE, OUTPUT);
   digitalWrite(TFT_LITE, HIGH);
 #else
@@ -362,13 +362,24 @@ void Arduboy2Core::paint8Pixels(uint8_t pixels)
 void Arduboy2Core::paintScreen(const uint8_t *image)
 {
 #if defined(__SAMD51__)
-  paintScreen(image, false);
+  paintScreen((uint8_t*)image, false);
 #else
   for (int i = 0; i < (HEIGHT*WIDTH)/8; i++)
   {
     SPItransfer(pgm_read_byte(image + i));
   }
 #endif
+}
+
+void Arduboy2Core::paintFramebuf(void) {
+  // now draw it!
+  if (! firstframe) {
+    tft.endWrite(); // End transaction from any prior callback
+    firstframe = false;
+  }
+  tft.startWrite(); // Start new display transaction
+  tft.setAddrWindow(X_OFFSET, Y_OFFSET, WIDTH, HEIGHT);
+  tft.writePixels(framebuf,  WIDTH*HEIGHT, false); // immediate return;
 }
 
 // paint from a memory buffer, this should be FAST as it's likely what
@@ -391,20 +402,11 @@ void Arduboy2Core::paintScreen(uint8_t image[], bool clear)
       framebuf[x+y*WIDTH] = color;
     }
   }
-  // now draw it!
-  if (! firstframe) {
-    tft.endWrite(); // End transaction from any prior callback
-    firstframe = false;
-  }
-  tft.startWrite(); // Start new display transaction
-  tft.setAddrWindow(X_OFFSET, Y_OFFSET, WIDTH, HEIGHT);
-  tft.writePixels(framebuf,  WIDTH*HEIGHT, false); // immediate return;
-  
+  paintFramebuf();
   // clear out the image
   if (clear) {
     memset(image, 0x0, WIDTH*HEIGHT/8);
   }
-
 #else
   uint16_t count;
 
@@ -475,7 +477,7 @@ void Arduboy2Core::paintScreen(uint8_t image[], bool clear)
 void Arduboy2Core::blank()
 {
 #ifdef __SAMD51__
-  tft.fill(0x00);
+  tft.fillScreen(0x00);
 #else
   for (int i = 0; i < (HEIGHT*WIDTH)/8; i++)
     SPItransfer(0x00);
@@ -497,7 +499,7 @@ void Arduboy2Core::sendLCDCommand(uint8_t command)
 void Arduboy2Core::invert(bool inverse)
 {
 #ifdef __SAMD51__
-  tft.invert(inverse);
+  tft.invertDisplay(inverse);
 #else
   sendLCDCommand(inverse ? OLED_PIXELS_INVERTED : OLED_PIXELS_NORMAL);
 #endif
@@ -509,9 +511,9 @@ void Arduboy2Core::allPixelsOn(bool on)
 {
 #ifdef __SAMD51__
   if (on) 
-    tft.fill(0xFF);
+    tft.fillScreen(0xFFFF);
   else
-    display();
+    paintFramebuf();
 #else
   sendLCDCommand(on ? OLED_ALL_PIXELS_ON : OLED_PIXELS_FROM_RAM);
 #endif

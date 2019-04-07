@@ -8,40 +8,76 @@
 #include "Arduboy2Beep.h"
 
 #if defined(__SAMD51__)
+#include <SD.h>
+#include <Audio.h>
+
+AudioSynthWaveformSine sine1, sine2;
+AudioMixer4              mixer1;
+AudioOutputAnalogStereo  audioOut;
+AudioConnection          patchCord1(sine2, 0, mixer1, 1);
+AudioConnection          patchCord2(sine1, 0, mixer1, 0);
+AudioConnection          patchCord3(mixer1, audioOut);
+
 uint8_t BeepPin1::duration = 0;
+uint8_t BeepPin2::duration = 0;
 
 void BeepPin1::begin()
 {
-  pinMode(A0, OUTPUT);
-  digitalWrite(A0, LOW);
+  AudioMemory(2);
 }
 
-void BeepPin1::tone(uint16_t count)
+void BeepPin2::begin()
 {
-  Serial.print("Tone: "); Serial.println(count);
-  BeepPin1::tone(count, 0);
+  AudioMemory(2);
 }
 
-void BeepPin1::tone(uint16_t count, uint8_t dur)
+void BeepPin1::tone(float freq)
 {
-  Serial.print("ToneDur: "); Serial.println(count);
-  ::tone(A0, count, 0);
+  BeepPin1::tone(freq, 0);
+}
+
+void BeepPin2::tone(float freq)
+{
+  BeepPin2::tone(freq, 0);
+}
+
+void BeepPin1::tone(float freq, uint8_t dur)
+{
+  sine1.amplitude(1.0);
+  sine1.frequency(freq);
+  duration = dur;
+}
+
+void BeepPin2::tone(float freq, uint8_t dur)
+{
+  sine2.amplitude(1.0);
+  sine2.frequency(freq);
   duration = dur;
 }
 
 void BeepPin1::timer()
 {
   if (duration && (--duration == 0)) {
-    noTone();
+    sine1.amplitude(0);
+  }
+}
+
+void BeepPin2::timer()
+{
+  if (duration && (--duration == 0)) {
+    sine2.amplitude(0);
   }
 }
 
 void BeepPin1::noTone()
 {
-  Serial.println("noTone");
-  ::noTone(A0);
+  sine1.amplitude(0);
 }
 
+void BeepPin2::noTone()
+{
+  sine2.amplitude(0);
+}
 
 #elif !defined(AB_DEVKIT)
 

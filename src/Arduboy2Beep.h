@@ -171,7 +171,11 @@ class BeepPin1
    *
    * \see freq() timer() noTone()
    */
+#if defined(__SAMD51__)
+  static void tone(float freq);
+#else
   static void tone(uint16_t count);
+#endif
 
   /** \brief
    * Play a tone for a given duration.
@@ -193,7 +197,11 @@ class BeepPin1
    *
    * \see freq() timer() noTone()
    */
+#if defined(__SAMD51__)
+  static void tone(float freq, uint8_t dur);
+#else
   static void tone(uint16_t count, uint8_t dur);
+#endif
 
   /** \brief
    * Handle the duration that a tone plays for.
@@ -315,7 +323,11 @@ class BeepPin2
    * \details
    * For details see `BeepPin1::tone(uint16_t)`.
    */
+#if defined(__SAMD51__)
+  static void tone(float freq);
+#else
   static void tone(uint16_t count);
+#endif
 
   /** \brief
    * Play a tone on speaker pin 2 for a given duration.
@@ -327,7 +339,11 @@ class BeepPin2
    * \details
    * For details see `BeepPin1::tone(uint16_t, uint8_t)`.
    */
+#if defined(__SAMD51__)
+  static void tone(float freq, uint8_t dur);
+#else
   static void tone(uint16_t count, uint8_t dur);
+#endif
 
   /** \brief
    * Handle the duration that a tone on speaker pin 2 plays for.
@@ -357,10 +373,15 @@ class BeepPin2
    * \details
    * For details see `BeepPin1::freq()`.
    */
+#if defined(__SAMD51__)
+  // on samd51 we use tone() so dont do any conversion!
+  static constexpr uint16_t freq(const float hz) { return hz; }
+#else
   static constexpr uint16_t freq(const float hz)
   {
-    return (uint16_t) (((F_CPU / 128 / 2) + (hz / 2)) / hz) - 1;
+    return (uint16_t) (((F_CPU / 8 / 2) + (hz / 2)) / hz) - 1;
   }
+#endif
 };
 
 #endif

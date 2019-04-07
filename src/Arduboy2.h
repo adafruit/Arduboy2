@@ -8,10 +8,7 @@
 #define ARDUBOY2_H
 
 #include <Arduino.h>
-#ifdef __SAMD51__
-#else
-  #include <EEPROM.h>
-#endif
+#include <EEPROM.h>
 #include "Arduboy2Core.h"
 #include "Arduboy2Beep.h"
 #include "Sprites.h"

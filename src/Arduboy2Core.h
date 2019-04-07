@@ -214,6 +214,7 @@
 #define TFT_RST      46       // Display reset Arduino pin number
 #define TFT_LITE     47
 #define PIN_SPEAKER_1   A0
+#define PIN_SPEAKER_2   A0
 #define SPEAKER_ENABLE  51
 #define NEOPIXEL_PIN  8
 #define RED_LED       0
@@ -532,6 +533,10 @@ class Arduboy2Core
      *     . . . . . . . . (page 2)         . . . . . . . . (page 2)
      */
     void static paint8Pixels(uint8_t pixels);
+
+
+    ///< Paint the frame buffer (SAMD51 only)
+    void static paintFramebuf(void);
 
     /** \brief
      * Paints an entire image directly to the display from program memory.
