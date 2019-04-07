@@ -14,6 +14,14 @@
   #define X_OFFSET  16
   #define Y_OFFSET  32
   bool firstframe = true; // helps us with our first DMA transfer
+
+// use a file on QSPI circuitpython filesys
+  #include <Adafruit_SPIFlash.h>
+  #include <Adafruit_SPIFlash_FatFs.h>
+  #define FLASH_TYPE    SPIFLASHTYPE_W25Q16BV 
+  Adafruit_SPIFlash flash(PIN_QSPI_SCK, PIN_QSPI_IO1, PIN_QSPI_IO0, PIN_QSPI_CS);
+  Adafruit_M0_Express_CircuitPython pythonfs(flash);
+  File EEPROMFile;
 #else
   #include <avr/wdt.h>
 #endif
@@ -96,6 +104,39 @@ void Arduboy2Core::boot()
 #ifdef __SAMD51__
   Serial.begin(115200);
   bootOLED();
+  // Initialize flash library and check its chip ID.
+  if (!flash.begin(FLASH_TYPE)) {
+    Serial.println("Error, failed to initialize flash chip!");
+    while(1);
+  }
+  Serial.print("Flash chip JEDEC ID: 0x"); Serial.println(flash.GetJEDECID(), HEX);
+
+  // First call begin to mount the filesystem.  Check that it returns true
+  // to make sure the filesystem was mounted.
+  if (!pythonfs.begin()) {
+    Serial.println("Failed to mount filesystem!");
+    Serial.println("Was CircuitPython loaded on the board first to create the filesystem?");
+    while(1);
+  }
+  Serial.println("Mounted filesystem!");
+  // Check if a boot.py exists and print it out.
+  if (! pythonfs.exists("ARDUBOY.EEP")) {
+    Serial.println("Creating ARDUBOY.EEP file");
+    File data = pythonfs.open("ARDUBOY.EEP", FILE_WRITE);
+    if (!data) {
+       Serial.println("Failed to create file?");
+       while (1);
+    }
+    Serial.println("Created");
+    for (int i=0; i<1024; i++) {
+      data.write(0xFF);
+    }
+    data.close();
+  } else {
+    Serial.println("Found EEPROM file");
+  }
+  EEPROMFile = pythonfs.open("ARDUBOY.EEP", FILE_WRITE);
+
 #else
   // Select the ADC input here so a delay isn't required in initRandomSeed()
   ADMUX = RAND_SEED_IN_ADMUX;

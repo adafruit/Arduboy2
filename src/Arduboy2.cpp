@@ -109,9 +109,7 @@ void Arduboy2Base::sysCtrlSound(uint8_t buttons, uint8_t led, uint8_t eeVal)
     digitalWriteRGB(BLUE_LED, RGB_OFF); // turn off blue LED
     delayShort(200);
     digitalWriteRGB(led, RGB_ON); // turn on "acknowledge" LED
-#if !defined(__SAMD51__)
     EEPROM.update(EEPROM_AUDIO_ON_OFF, eeVal);
-#endif
     delayShort(500);
     digitalWriteRGB(led, RGB_OFF); // turn off "acknowledge" LED
 
@@ -1102,29 +1100,18 @@ bool Arduboy2Base::collide(Rect rect1, Rect rect2)
 
 uint16_t Arduboy2Base::readUnitID()
 {
-#ifdef __SAMD51__
-  return 0;
-#else
   return EEPROM.read(EEPROM_UNIT_ID) |
          (((uint16_t)(EEPROM.read(EEPROM_UNIT_ID + 1))) << 8);
-#endif
 }
 
 void Arduboy2Base::writeUnitID(uint16_t id)
 {
-#ifdef __SAMD51__
-  return;
-#else
   EEPROM.update(EEPROM_UNIT_ID, (uint8_t)(id & 0xff));
   EEPROM.update(EEPROM_UNIT_ID + 1, (uint8_t)(id >> 8));
-#endif
 }
 
 uint8_t Arduboy2Base::readUnitName(char* name)
 {
-#ifdef __SAMD51__
-  return 0;
-#else
   char val;
   uint8_t dest;
   uint8_t src = EEPROM_UNIT_NAME;
@@ -1141,14 +1128,10 @@ uint8_t Arduboy2Base::readUnitName(char* name)
 
   name[dest] = 0x00;
   return dest;
-#endif
 }
 
 void Arduboy2Base::writeUnitName(char* name)
 {
-#ifdef __SAMD51__
-  return;
-#else
   bool done = false;
   uint8_t dest = EEPROM_UNIT_NAME;
 
@@ -1161,70 +1144,45 @@ void Arduboy2Base::writeUnitName(char* name)
     EEPROM.update(dest, done ? 0x00 : name[src]);
     dest++;
   }
-#endif
 }
 
 bool Arduboy2Base::readShowBootLogoFlag()
 {
-#ifdef __SAMD51__
-  return true;
-#else
   return (EEPROM.read(EEPROM_SYS_FLAGS) & SYS_FLAG_SHOW_LOGO_MASK);
-#endif
 }
 
 void Arduboy2Base::writeShowBootLogoFlag(bool val)
 {
-#ifdef __SAMD51__
-  return;
-#else
   uint8_t flags = EEPROM.read(EEPROM_SYS_FLAGS);
 
   bitWrite(flags, SYS_FLAG_SHOW_LOGO, val);
   EEPROM.update(EEPROM_SYS_FLAGS, flags);
-#endif
 }
 
 bool Arduboy2Base::readShowUnitNameFlag()
 {
-#ifdef __SAMD51__
-  return true;
-#else
   return (EEPROM.read(EEPROM_SYS_FLAGS) & SYS_FLAG_UNAME_MASK);
-#endif
 }
 
 void Arduboy2Base::writeShowUnitNameFlag(bool val)
 {
-#ifdef __SAMD51__
-  return;
-#else
   uint8_t flags = EEPROM.read(EEPROM_SYS_FLAGS);
 
   bitWrite(flags, SYS_FLAG_UNAME, val);
   EEPROM.update(EEPROM_SYS_FLAGS, flags);
-#endif
 }
 
 bool Arduboy2Base::readShowBootLogoLEDsFlag()
 {
-#ifdef __SAMD51__
-  return true;
-#else
   return (EEPROM.read(EEPROM_SYS_FLAGS) & SYS_FLAG_SHOW_LOGO_LEDS_MASK);
-#endif
 }
 
 void Arduboy2Base::writeShowBootLogoLEDsFlag(bool val)
 {
-#ifdef __SAMD51__
-  return;
-#else
   uint8_t flags = EEPROM.read(EEPROM_SYS_FLAGS);
 
   bitWrite(flags, SYS_FLAG_SHOW_LOGO_LEDS, val);
   EEPROM.update(EEPROM_SYS_FLAGS, flags);
-#endif
 }
 
 void Arduboy2Base::swap(int16_t& a, int16_t& b)

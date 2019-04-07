@@ -3,7 +3,10 @@
 #define MOCK_EEPROM_H
 // eventually, make this do something
 
-static uint16_t E2END = 255;
+#include <Adafruit_SPIFlash.h>
+#include <Adafruit_SPIFlash_FatFs.h>
+static uint16_t E2END = 1023;
+
 
 /***
     EERef class.
@@ -19,12 +22,26 @@ struct EERef{
         : index( index )                 {}
     
     //Access/read members.
-    uint8_t operator*() const            { return 0xFF; /*return eeprom_read_byte( (uint8_t*) index );*/ }
+  uint8_t operator*() const            
+  { 
+    extern File EEPROMFile; 
+    EEPROMFile.seek(index); 
+    uint8_t b = EEPROMFile.read(); 
+    Serial.print("EEPROM READ "); Serial.print(index); Serial.print(" : "); Serial.println(b, HEX); 
+    return b; 
+    /*return eeprom_read_byte( (uint8_t*) index );*/ 
+  }
     operator uint8_t() const             { return **this; }
     
     //Assignment/write members.
     EERef &operator=( const EERef &ref ) { return *this = *ref; }
-    EERef &operator=( uint8_t in )       { return /*eeprom_write_byte( (uint8_t*) index, in ),*/ *this;  }
+    EERef &operator=( uint8_t in )       { 
+      extern File EEPROMFile; 
+      Serial.print("EEPROM WRITE "); Serial.print(index); Serial.print(" = "); Serial.println(in, HEX); 
+      EEPROMFile.seek(index); 
+      EEPROMFile.write(in); 
+      EEPROMFile.flush();
+      return /*eeprom_write_byte( (uint8_t*) index, in ),*/ *this;  }
     EERef &operator +=( uint8_t in )     { return *this = **this + in; }
     EERef &operator -=( uint8_t in )     { return *this = **this - in; }
     EERef &operator *=( uint8_t in )     { return *this = **this * in; }
