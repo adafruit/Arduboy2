@@ -209,7 +209,7 @@ void Arduboy2Core::bootPins()
 #elif defined(__SAMD51__)
   // Start NeoPixels
   strip.begin();
-  strip.setBrightness(100);
+  strip.setBrightness(50);
   strip.show(); // Initialize all pixels to 'off'
   // Init button latch
   pinMode(BUTTON_CLOCK, OUTPUT);
