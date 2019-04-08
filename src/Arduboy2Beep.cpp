@@ -20,6 +20,8 @@ AudioConnection          patchCord3(mixer1, audioOut);
 uint8_t BeepPin1::duration = 0;
 uint8_t BeepPin2::duration = 0;
 
+#define SPEAKER_ENABLE  51
+
 void BeepPin1::begin()
 {
   AudioMemory(2);
@@ -42,6 +44,7 @@ void BeepPin2::tone(float freq)
 
 void BeepPin1::tone(float freq, uint8_t dur)
 {
+  digitalWrite(SPEAKER_ENABLE, HIGH);
   sine1.amplitude(1.0);
   sine1.frequency(freq);
   duration = dur;
@@ -49,6 +52,7 @@ void BeepPin1::tone(float freq, uint8_t dur)
 
 void BeepPin2::tone(float freq, uint8_t dur)
 {
+  digitalWrite(SPEAKER_ENABLE, HIGH);
   sine2.amplitude(1.0);
   sine2.frequency(freq);
   duration = dur;
@@ -58,6 +62,7 @@ void BeepPin1::timer()
 {
   if (duration && (--duration == 0)) {
     sine1.amplitude(0);
+    digitalWrite(SPEAKER_ENABLE, LOW);
   }
 }
 
@@ -65,17 +70,20 @@ void BeepPin2::timer()
 {
   if (duration && (--duration == 0)) {
     sine2.amplitude(0);
+    digitalWrite(SPEAKER_ENABLE, LOW);
   }
 }
 
 void BeepPin1::noTone()
 {
   sine1.amplitude(0);
+  digitalWrite(SPEAKER_ENABLE, LOW);
 }
 
 void BeepPin2::noTone()
 {
   sine2.amplitude(0);
+  digitalWrite(SPEAKER_ENABLE, LOW);
 }
 
 #elif !defined(AB_DEVKIT)

@@ -16,7 +16,9 @@ void Arduboy2Audio::on()
   bitSet(SPEAKER_1_DDR, SPEAKER_1_BIT);
   bitSet(SPEAKER_2_DDR, SPEAKER_2_BIT);
 #elif defined(__SAMD51__)
-  digitalWrite(SPEAKER_ENABLE, HIGH);
+  //only on when we make sound!
+  // digitalWrite(SPEAKER_ENABLE, HIGH);
+  digitalWrite(SPEAKER_ENABLE, LOW);
 #else
   bitSet(SPEAKER_1_DDR, SPEAKER_1_BIT);
 #endif
