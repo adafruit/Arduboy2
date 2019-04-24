@@ -8,10 +8,7 @@
 #define ARDUBOY2_CORE_H
 
 #include <Arduino.h>
-#ifdef __SAMD51__
-#include <Adafruit_NeoPixel.h>
-#include <Adafruit_ST7735.h>
-#else
+#ifdef __AVR__
   #include <avr/power.h>
   #include <avr/sleep.h>
 #endif 
@@ -208,29 +205,20 @@
 // Reference: https://github.com/Arduboy/Arduboy/issues/108
 
 #elif defined(__SAMD51__)
+#include <Adafruit_Arcada.h>
 
-#define TFT_CS       44       // Display CS Arduino pin number
-#define TFT_DC       45       // Display D/C Arduino pin number
-#define TFT_RST      46       // Display reset Arduino pin number
-#define TFT_LITE     47
-#define PIN_SPEAKER_1   A0
-#define PIN_SPEAKER_2   A0
-#define SPEAKER_ENABLE  51
-#define NEOPIXEL_PIN  8
 #define RED_LED       0
 #define GREEN_LED     1
 #define BLUE_LED      2
-#define BUTTON_CLOCK 48
-#define BUTTON_DATA  49
-#define BUTTON_LATCH 50
+
 // bit values for button states
-// these are determined by the buttonsState() function, reading the shift reg
-#define LEFT_BUTTON   0x01
-#define UP_BUTTON     0x02
-#define DOWN_BUTTON   0x04
-#define RIGHT_BUTTON  0x08
-#define A_BUTTON      0x40
-#define B_BUTTON      0x80
+#define LEFT_BUTTON   ARCADA_BUTTONMASK_LEFT
+#define UP_BUTTON     ARCADA_BUTTONMASK_UP
+#define DOWN_BUTTON   ARCADA_BUTTONMASK_DOWN
+#define RIGHT_BUTTON  ARCADA_BUTTONMASK_RIGHT
+#define A_BUTTON      ARCADA_BUTTONMASK_A
+#define B_BUTTON      ARCADA_BUTTONMASK_B
+
 #define TXLED1        digitalWrite(13, HIGH)
 #define TXLED0        digitalWrite(13, LOW)
 #define RXLED1        digitalWrite(13, HIGH)

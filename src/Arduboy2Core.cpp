@@ -6,21 +6,15 @@
 
 #include "Arduboy2Core.h"
 #ifdef __SAMD51__
-  Adafruit_ST7735 tft = Adafruit_ST7735(&SPI1, TFT_CS,  TFT_DC, TFT_RST);
-  Adafruit_NeoPixel strip = Adafruit_NeoPixel(5, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+#include <Adafruit_Arcada.h>
+
+  Adafruit_Arcada arcada;
+
   uint32_t neopixel_color = 0;
-  // define a framebuffer (yeahhhh...)
-  uint16_t framebuf[WIDTH*HEIGHT];
   #define X_OFFSET  16
   #define Y_OFFSET  32
-  bool firstframe = true; // helps us with our first DMA transfer
 
-// use a file on QSPI circuitpython filesys
-  #include <Adafruit_SPIFlash.h>
-  #include <Adafruit_SPIFlash_FatFs.h>
-  #define FLASH_TYPE    SPIFLASHTYPE_W25Q16BV 
-  Adafruit_SPIFlash flash(PIN_QSPI_SCK, PIN_QSPI_IO1, PIN_QSPI_IO0, PIN_QSPI_CS);
-  Adafruit_M0_Express_CircuitPython pythonfs(flash);
+// use a file on filesys
   File EEPROMFile;
 #else
   #include <avr/wdt.h>
@@ -101,28 +95,28 @@ void Arduboy2Core::boot()
   #endif
 
   bootPins();
-#ifdef __SAMD51__
+#ifdef _ADAFRUIT_ARCADA_
   Serial.begin(115200);
-  bootOLED();
-  // Initialize flash library and check its chip ID.
-  if (!flash.begin(FLASH_TYPE)) {
-    Serial.println("Error, failed to initialize flash chip!");
+  if (!arcada.begin()) {
+    Serial.println("Couldn't start Arcada");
     while(1);
   }
-  Serial.print("Flash chip JEDEC ID: 0x"); Serial.println(flash.GetJEDECID(), HEX);
 
-  // First call begin to mount the filesystem.  Check that it returns true
-  // to make sure the filesystem was mounted.
-  if (!pythonfs.begin()) {
-    Serial.println("Failed to mount filesystem!");
-    Serial.println("Was CircuitPython loaded on the board first to create the filesystem?");
+  if (!arcada.createFrameBuffer(128, 64)) {
+    Serial.println("Couldn't create framebuffer");
     while(1);
   }
-  Serial.println("Mounted filesystem!");
+
+  // Initialize flash library and check its chip ID.
+  if (!arcada.filesysBegin()) {
+    Serial.println("Error, failed to initialize filesys!");
+    while(1);
+  }
+
   // Check if a boot.py exists and print it out.
-  if (! pythonfs.exists("ARDUBOY.EEP")) {
+  if (! arcada.exists("ARDUBOY.EEP")) {
     Serial.println("Creating ARDUBOY.EEP file");
-    File data = pythonfs.open("ARDUBOY.EEP", FILE_WRITE);
+    File data = arcada.open("ARDUBOY.EEP", FILE_WRITE);
     if (!data) {
        Serial.println("Failed to create file?");
        while (1);
@@ -135,7 +129,7 @@ void Arduboy2Core::boot()
   } else {
     Serial.println("Found EEPROM file");
   }
-  EEPROMFile = pythonfs.open("ARDUBOY.EEP", FILE_WRITE);
+  EEPROMFile = arcada.open("ARDUBOY.EEP", FILE_WRITE);
 
 #else
   // Select the ADC input here so a delay isn't required in initRandomSeed()
@@ -246,30 +240,14 @@ void Arduboy2Core::bootPins()
   DDRF &= ~(_BV(A_BUTTON_BIT) | _BV(B_BUTTON_BIT) | _BV(RAND_SEED_IN_BIT));
   // Port F outputs (none)
   // Speaker: Not set here. Controlled by audio class
-
-#elif defined(__SAMD51__)
-  // Start NeoPixels
-  strip.begin();
-  strip.setBrightness(50);
-  strip.show(); // Initialize all pixels to 'off'
-  // Init button latch
-  pinMode(BUTTON_CLOCK, OUTPUT);
-  digitalWrite(BUTTON_CLOCK, HIGH);
-  pinMode(BUTTON_LATCH, OUTPUT);
-  digitalWrite(BUTTON_LATCH, HIGH);
-  pinMode(BUTTON_DATA, INPUT);
 #endif
 }
 
+
+#if !defined(_ADAFRUIT_ARCADA_)
+
 void Arduboy2Core::bootOLED()
 {
-#ifdef __SAMD51__
-  tft.initR(INITR_BLACKTAB);
-  tft.setRotation(1);
-  tft.fillScreen(0x7BEF);
-  pinMode(TFT_LITE, OUTPUT);
-  digitalWrite(TFT_LITE, HIGH);
-#else
   // reset the display
   delayShort(5); // reset pin should be low here. let it stay low a while
   bitSet(RST_PORT, RST_BIT); // set high to come out of reset
@@ -285,10 +263,7 @@ void Arduboy2Core::bootOLED()
     SPItransfer(pgm_read_byte(lcdBootProgram + i));
   }
   LCDDataMode();
-#endif
 }
-
-#if !defined(__SAMD51__)
 
 void Arduboy2Core::LCDDataMode()
 {
@@ -402,7 +377,7 @@ void Arduboy2Core::paint8Pixels(uint8_t pixels)
 
 void Arduboy2Core::paintScreen(const uint8_t *image)
 {
-#if defined(__SAMD51__)
+#if defined(_ADAFRUIT_ARCADA_)
   paintScreen((uint8_t*)image, false);
 #else
   for (int i = 0; i < (HEIGHT*WIDTH)/8; i++)
@@ -410,17 +385,6 @@ void Arduboy2Core::paintScreen(const uint8_t *image)
     SPItransfer(pgm_read_byte(image + i));
   }
 #endif
-}
-
-void Arduboy2Core::paintFramebuf(void) {
-  // now draw it!
-  if (! firstframe) {
-    tft.endWrite(); // End transaction from any prior callback
-    firstframe = false;
-  }
-  tft.startWrite(); // Start new display transaction
-  tft.setAddrWindow(X_OFFSET, Y_OFFSET, WIDTH, HEIGHT);
-  tft.writePixels(framebuf,  WIDTH*HEIGHT, false); // immediate return;
 }
 
 // paint from a memory buffer, this should be FAST as it's likely what
@@ -431,8 +395,10 @@ void Arduboy2Core::paintFramebuf(void) {
 // It is specifically tuned for a 16MHz CPU clock and SPI clocking at 8MHz.
 void Arduboy2Core::paintScreen(uint8_t image[], bool clear)
 {
-#if defined(__SAMD51__) 
+#if defined(_ADAFRUIT_ARCADA_) 
   uint16_t color;
+  uint16_t *framebuf = arcada.getFrameBuffer();
+
   for (uint8_t y=0; y<HEIGHT; y++) {
     uint8_t row = y / 8;
     uint8_t bit_position = y % 8;
@@ -443,7 +409,7 @@ void Arduboy2Core::paintScreen(uint8_t image[], bool clear)
       framebuf[x+y*WIDTH] = color;
     }
   }
-  paintFramebuf();
+  arcada.blitFrameBuffer(X_OFFSET, Y_OFFSET);
   // clear out the image
   if (clear) {
     memset(image, 0x0, WIDTH*HEIGHT/8);
@@ -517,8 +483,8 @@ void Arduboy2Core::paintScreen(uint8_t image[], bool clear)
 
 void Arduboy2Core::blank()
 {
-#ifdef __SAMD51__
-  tft.fillScreen(0x00);
+#ifdef _ADAFRUIT_ARCADA_
+  arcada.fillScreen(0x00);
 #else
   for (int i = 0; i < (HEIGHT*WIDTH)/8; i++)
     SPItransfer(0x00);
@@ -527,7 +493,7 @@ void Arduboy2Core::blank()
 
 void Arduboy2Core::sendLCDCommand(uint8_t command)
 {
-#ifdef __SAMD51__
+#ifdef _ADAFRUIT_ARCADA_
 #else
   LCDCommandMode();
   SPItransfer(command);
@@ -539,8 +505,8 @@ void Arduboy2Core::sendLCDCommand(uint8_t command)
 // when inverted, a pixel set to 0 will be on
 void Arduboy2Core::invert(bool inverse)
 {
-#ifdef __SAMD51__
-  tft.invertDisplay(inverse);
+#ifdef _ADAFRUIT_ARCADA_
+  arcada.invertDisplay(inverse);
 #else
   sendLCDCommand(inverse ? OLED_PIXELS_INVERTED : OLED_PIXELS_NORMAL);
 #endif
@@ -550,9 +516,9 @@ void Arduboy2Core::invert(bool inverse)
 // or set to normal buffer display
 void Arduboy2Core::allPixelsOn(bool on)
 {
-#ifdef __SAMD51__
+#ifdef _ADAFRUIT_ARCADA_
   if (on) 
-    tft.fillScreen(0xFFFF);
+    arcada.fillScreen(0xFFFF);
   else
     paintFramebuf();
 #else
@@ -563,7 +529,7 @@ void Arduboy2Core::allPixelsOn(bool on)
 // flip the display vertically or set to normal
 void Arduboy2Core::flipVertical(bool flipped)
 {
-#ifdef __SAMD51__
+#ifdef _ADAFRUIT_ARCADA_
   Serial.println("flipVertical");
 #else
   sendLCDCommand(flipped ? OLED_VERTICAL_FLIPPED : OLED_VERTICAL_NORMAL);
@@ -605,8 +571,8 @@ void Arduboy2Core::setRGBled(uint8_t red, uint8_t green, uint8_t blue)
   neopixel_color = (uint32_t)red << 16;
   neopixel_color |= (uint32_t)green << 8;
   neopixel_color |= (uint32_t)blue;
-  strip.fill(neopixel_color);
-  strip.show();
+  arcada.pixels.fill(neopixel_color);
+  arcada.pixels.show();
 #endif
 }
 
@@ -642,8 +608,8 @@ void Arduboy2Core::setRGBled(uint8_t color, uint8_t val)
     neopixel_color &= 0xFFFF00;
     neopixel_color |= (uint32_t)val;
   }
-  strip.fill(neopixel_color);
-  strip.show();
+  arcada.pixels.fill(neopixel_color);
+  arcada.pixels.show();
 #endif
 }
 
@@ -667,12 +633,12 @@ void Arduboy2Core::digitalWriteRGB(uint8_t red, uint8_t green, uint8_t blue)
   (void)red;    // parameter unused
   (void)green;  // parameter unused
   bitWrite(BLUE_LED_PORT, BLUE_LED_BIT, blue);
-#elif defined(__SAMD51__)
+#elif defined(_ADAFRUIT_ARCADA_)
   neopixel_color = (uint32_t)red << 16;
   neopixel_color |= (uint32_t)green << 8;
   neopixel_color |= (uint32_t)blue;
-  strip.fill(neopixel_color);
-  strip.show();
+  arcada.pixels.fill(neopixel_color);
+  arcada.pixels.show();
 #endif
 }
 
@@ -697,7 +663,7 @@ void Arduboy2Core::digitalWriteRGB(uint8_t color, uint8_t val)
   {
     bitWrite(BLUE_LED_PORT, BLUE_LED_BIT, val);
   }
-#elif defined(__SAMD51__)
+#elif defined(_ADAFRUIT_ARCADA_)
   if (color == RED_LED) {
     if (!val)   neopixel_color |= 0xFF0000;
     else       neopixel_color &= ~0xFF0000;
@@ -710,8 +676,8 @@ void Arduboy2Core::digitalWriteRGB(uint8_t color, uint8_t val)
     if (!val)   neopixel_color |= 0x0000FF;
     else       neopixel_color &= ~0x0000FF;
   }
-  strip.fill(neopixel_color);
-  strip.show();
+  arcada.pixels.fill(neopixel_color);
+  arcada.pixels.show();
 #endif
 }
 
@@ -741,21 +707,8 @@ uint8_t Arduboy2Core::buttonsState()
   // B
   if (bitRead(B_BUTTON_PORTIN, B_BUTTON_BIT) == 0) { buttons |= B_BUTTON; }
 
-#elif defined(__SAMD51__)
-  // PyBadge uses a latch to read 8 bits
-  digitalWrite(BUTTON_LATCH, LOW);
-  delayMicroseconds(1);
-  digitalWrite(BUTTON_LATCH, HIGH);
-  delayMicroseconds(1);
-  
-  for(int i = 0; i < 8; i++) {
-    buttons <<= 1;
-    buttons |= digitalRead(BUTTON_DATA);
-    digitalWrite(BUTTON_CLOCK, HIGH);
-    delayMicroseconds(1);
-    digitalWrite(BUTTON_CLOCK, LOW);
-    delayMicroseconds(1);
-  }
+#elif defined(_ADAFRUIT_ARCADA_)
+  buttons = arcada.readButtons();
 #endif
 
   return buttons;

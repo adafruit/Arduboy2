@@ -3,8 +3,8 @@
 #define MOCK_EEPROM_H
 // eventually, make this do something
 
-#include <Adafruit_SPIFlash.h>
-#include <Adafruit_SPIFlash_FatFs.h>
+#include <Adafruit_Arcada.h>
+
 static uint16_t E2END = 1023;
 
 

@@ -8,6 +8,10 @@
 #include "ab_logo.c"
 #include "glcdfont.c"
 
+#ifdef _ADAFRUIT_ARCADA_
+extern Adafruit_Arcada arcada;
+#endif
+
 //================================
 //========== class Rect ==========
 //================================
@@ -296,8 +300,8 @@ int Arduboy2Base::cpuLoad()
 unsigned long Arduboy2Base::generateRandomSeed()
 {
   unsigned long seed;
-#ifdef __SAMD51__
-  seed = analogRead(A7); // light sensor
+#ifdef _ADAFRUIT_ARCADA_
+  seed = arcada.readLightSensor();
 #else
   power_adc_enable(); // ADC on
 
@@ -336,7 +340,7 @@ void Arduboy2Base::drawPixel(int16_t x, int16_t y, uint8_t color)
   uint16_t row_offset;
   uint8_t bit;
 
-#ifdef __SAMD51__
+#ifdef _ADAFRUIT_ARCADA_
   // We're fast enough to not need assembly
   bit = 1 << (y & 7);
   row_offset = y / 8 * WIDTH + x;
@@ -659,7 +663,7 @@ void Arduboy2Base::fillRect
 
 void Arduboy2Base::fillScreen(uint8_t color)
 {
-#ifdef __SAMD51__
+#ifdef _ADAFRUIT_ARCADA_
   // C code version is plenty fast
   if (color != BLACK) {
     color = 0xFF; // all pixels on
@@ -1263,11 +1267,11 @@ void Arduboy2::bootLogoExtra()
     return;
   }
 
-#ifdef __SAMD51__
+#ifdef _ADAFRUIT_ARCADA_
   {
     cursor_x = 50;
     cursor_y = 56;
-    print("PyBadge");
+    print("Arcada!");
 #else
   c = EEPROM.read(EEPROM_UNIT_NAME);
 
