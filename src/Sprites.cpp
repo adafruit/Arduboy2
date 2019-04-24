@@ -241,7 +241,7 @@ void Sprites::drawBitmap(int16_t x, int16_t y,
 
 
     case SPRITE_PLUS_MASK:
-#ifdef __SAMD51__
+#ifndef __AVR__
       uint8_t * sprite_ofs = (uint8_t *)(bitmap + ((start_h * w) + xOffset) * 2);
       uint8_t * buffer_ofs = (Arduboy2Base::sBuffer + ofs);
       uint8_t * buffer_ofs_2 = (buffer_ofs + 128);

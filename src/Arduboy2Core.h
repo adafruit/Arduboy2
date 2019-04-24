@@ -523,7 +523,7 @@ class Arduboy2Core
     void static paint8Pixels(uint8_t pixels);
 
 
-    ///< Paint the frame buffer (SAMD51 only)
+    ///< Paint the frame buffer (Arcada only)
     void static paintFramebuf(void);
 
     /** \brief

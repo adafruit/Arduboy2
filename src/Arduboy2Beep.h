@@ -7,6 +7,10 @@
 #ifndef ARDUBOY2_BEEP_H
 #define ARDUBOY2_BEEP_H
 
+#ifdef __SAMD51__
+#include <Adafruit_Arcada.h>
+#endif
+
 /** \brief
  * Play simple square wave tones using speaker pin 1.
  *
@@ -171,7 +175,7 @@ class BeepPin1
    *
    * \see freq() timer() noTone()
    */
-#if defined(__SAMD51__)
+#if defined(_ADAFRUIT_ARCADA_)
   static void tone(float freq);
 #else
   static void tone(uint16_t count);
@@ -197,7 +201,7 @@ class BeepPin1
    *
    * \see freq() timer() noTone()
    */
-#if defined(__SAMD51__)
+#if defined(_ADAFRUIT_ARCADA_)
   static void tone(float freq, uint8_t dur);
 #else
   static void tone(uint16_t count, uint8_t dur);
@@ -255,7 +259,7 @@ class BeepPin1
    * sketch's code size unless the sketch also uses floating point math for
    * other purposes.
    */
-#if defined(__SAMD51__)
+#if defined(_ADAFRUIT_ARCADA_)
   // on samd51 we use tone() so dont do any conversion!
   static constexpr uint16_t freq(const float hz) { return hz; }
 #else
@@ -323,7 +327,7 @@ class BeepPin2
    * \details
    * For details see `BeepPin1::tone(uint16_t)`.
    */
-#if defined(__SAMD51__)
+#if defined(_ADAFRUIT_ARCADA_)
   static void tone(float freq);
 #else
   static void tone(uint16_t count);
@@ -339,7 +343,7 @@ class BeepPin2
    * \details
    * For details see `BeepPin1::tone(uint16_t, uint8_t)`.
    */
-#if defined(__SAMD51__)
+#if defined(_ADAFRUIT_ARCADA_)
   static void tone(float freq, uint8_t dur);
 #else
   static void tone(uint16_t count, uint8_t dur);
@@ -373,7 +377,7 @@ class BeepPin2
    * \details
    * For details see `BeepPin1::freq()`.
    */
-#if defined(__SAMD51__)
+#if defined(_ADAFRUIT_ARCADA_)
   // on samd51 we use tone() so dont do any conversion!
   static constexpr uint16_t freq(const float hz) { return hz; }
 #else

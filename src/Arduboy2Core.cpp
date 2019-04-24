@@ -5,9 +5,7 @@
  */
 
 #include "Arduboy2Core.h"
-#ifdef __SAMD51__
-#include <Adafruit_Arcada.h>
-
+#ifdef _ADAFRUIT_ARCADA_
   Adafruit_Arcada arcada;
 
   uint32_t neopixel_color = 0;

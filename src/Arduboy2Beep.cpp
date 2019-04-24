@@ -7,10 +7,11 @@
 #include <Arduino.h>
 #include "Arduboy2Beep.h"
 
-#if defined(__SAMD51__)
+#if defined(_ADAFRUIT_ARCADA_)
 #include <Audio.h>
+extern Adafruit_Arcada arcada;
 
-AudioSynthWaveformSine sine1, sine2;
+AudioSynthWaveformSine   sine1, sine2;
 AudioMixer4              mixer1;
 AudioOutputAnalogStereo  audioOut;
 AudioConnection          patchCord1(sine2, 0, mixer1, 1);
@@ -19,8 +20,6 @@ AudioConnection          patchCord3(mixer1, audioOut);
 
 uint8_t BeepPin1::duration = 0;
 uint8_t BeepPin2::duration = 0;
-
-#define SPEAKER_ENABLE  51
 
 void BeepPin1::begin()
 {
@@ -44,7 +43,7 @@ void BeepPin2::tone(float freq)
 
 void BeepPin1::tone(float freq, uint8_t dur)
 {
-  digitalWrite(SPEAKER_ENABLE, HIGH);
+  arcada.enableSpeaker(true);
   sine1.amplitude(1.0);
   sine1.frequency(freq);
   duration = dur;
@@ -52,7 +51,7 @@ void BeepPin1::tone(float freq, uint8_t dur)
 
 void BeepPin2::tone(float freq, uint8_t dur)
 {
-  digitalWrite(SPEAKER_ENABLE, HIGH);
+  arcada.enableSpeaker(true);
   sine2.amplitude(1.0);
   sine2.frequency(freq);
   duration = dur;
@@ -62,7 +61,7 @@ void BeepPin1::timer()
 {
   if (duration && (--duration == 0)) {
     sine1.amplitude(0);
-    digitalWrite(SPEAKER_ENABLE, LOW);
+    arcada.enableSpeaker(false);
   }
 }
 
@@ -70,20 +69,20 @@ void BeepPin2::timer()
 {
   if (duration && (--duration == 0)) {
     sine2.amplitude(0);
-    digitalWrite(SPEAKER_ENABLE, LOW);
+    arcada.enableSpeaker(false);
   }
 }
 
 void BeepPin1::noTone()
 {
   sine1.amplitude(0);
-  digitalWrite(SPEAKER_ENABLE, LOW);
+  arcada.enableSpeaker(false);
 }
 
 void BeepPin2::noTone()
 {
   sine2.amplitude(0);
-  digitalWrite(SPEAKER_ENABLE, LOW);
+  arcada.enableSpeaker(false);
 }
 
 #elif !defined(AB_DEVKIT)
