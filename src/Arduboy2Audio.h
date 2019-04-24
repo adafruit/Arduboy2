@@ -9,6 +9,7 @@
 
 #include <Arduino.h>
 #ifdef __SAMD51__
+  #include <Adafruit_Arcada.h>
 #else
   #include <EEPROM.h>
 #endif

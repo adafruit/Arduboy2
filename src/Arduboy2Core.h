@@ -211,6 +211,9 @@
 #define GREEN_LED     1
 #define BLUE_LED      2
 
+#define PIN_SPEAKER_1 RIGHT_AUDIO_PIN
+#define PIN_SPEAKER_2 LEFT_AUDIO_PIN
+
 // bit values for button states
 #define LEFT_BUTTON   ARCADA_BUTTONMASK_LEFT
 #define UP_BUTTON     ARCADA_BUTTONMASK_UP

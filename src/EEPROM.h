@@ -110,7 +110,7 @@ struct EEPtr{
     This class is also 100% backwards compatible with earlier Arduino core releases.
 ***/
 
-struct SAMD51_EEPROMClass{
+struct ARCADA_EEPROMClass{
 
     //Basic user access methods.
     EERef operator[]( const int idx )    { return idx; }
@@ -139,7 +139,7 @@ struct SAMD51_EEPROMClass{
     }
 };
 
-static SAMD51_EEPROMClass EEPROM;
+static ARCADA_EEPROMClass EEPROM;
 
 #endif
 #endif

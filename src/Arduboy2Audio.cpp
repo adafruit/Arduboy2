@@ -7,6 +7,10 @@
 #include "Arduboy2.h"
 #include "Arduboy2Audio.h"
 
+#if defined(_ADAFRUIT_ARCADA_)
+extern Adafruit_Arcada arcada;
+#endif
+
 bool Arduboy2Audio::audio_enabled = false;
 
 void Arduboy2Audio::on()
@@ -15,10 +19,9 @@ void Arduboy2Audio::on()
 #ifdef ARDUBOY_10
   bitSet(SPEAKER_1_DDR, SPEAKER_1_BIT);
   bitSet(SPEAKER_2_DDR, SPEAKER_2_BIT);
-#elif defined(__SAMD51__)
+#elif defined(_ADAFRUIT_ARCADA_)
   //only on when we make sound!
-  // digitalWrite(SPEAKER_ENABLE, HIGH);
-  digitalWrite(SPEAKER_ENABLE, LOW);
+  arcada.enableSpeaker(false);
 #else
   bitSet(SPEAKER_1_DDR, SPEAKER_1_BIT);
 #endif
@@ -32,8 +35,8 @@ void Arduboy2Audio::off()
 #ifdef ARDUBOY_10
   bitClear(SPEAKER_1_DDR, SPEAKER_1_BIT);
   bitClear(SPEAKER_2_DDR, SPEAKER_2_BIT);
-#elif defined(__SAMD51__)
-  digitalWrite(SPEAKER_ENABLE, LOW);
+#elif defined(_ADAFRUIT_ARCADA_)
+  arcada.enableSpeaker(false);
 #else
   bitClear(SPEAKER_1_DDR, SPEAKER_1_BIT);
 #endif
@@ -49,15 +52,14 @@ void Arduboy2Audio::toggle()
 
 void Arduboy2Audio::saveOnOff()
 {
-#if !defined(__SAMD51__)
+#if !defined(_ADAFRUIT_ARCADA_)
   EEPROM.update(EEPROM_AUDIO_ON_OFF, audio_enabled);
 #endif
 }
 
 void Arduboy2Audio::begin()
 {
-#if defined(__SAMD51__)
-  pinMode(SPEAKER_ENABLE, OUTPUT);
+#if defined(_ADAFRUIT_ARCADA_)
   on();
 #else
   if (EEPROM.read(EEPROM_AUDIO_ON_OFF))
