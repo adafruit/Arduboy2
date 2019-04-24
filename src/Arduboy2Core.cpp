@@ -297,7 +297,7 @@ void Arduboy2Core::SPItransfer(uint8_t data)
   while (!(SPSR & _BV(SPIF))) { } // wait
 }
 
-#endif  // samd51 can just use GFX library to manage the display
+#endif  // _ADAFRUIT_ARCADA_ can just use GFX library to manage the display
 
 void Arduboy2Core::safeMode()
 {
@@ -305,7 +305,7 @@ void Arduboy2Core::safeMode()
   {
     digitalWriteRGB(RED_LED, RGB_ON);
 
-#if !defined(ARDUBOY_CORE) && !defined(__SAMD51__) // for Arduboy core timer 0 should remain enabled
+#if !defined(ARDUBOY_CORE) && !defined(_ADAFRUIT_ARCADA_) // for Arduboy core timer 0 should remain enabled
     // prevent the bootloader magic number from being overwritten by timer 0
     // when a timer variable overlaps the magic number location
     power_timer0_disable();
@@ -320,7 +320,7 @@ void Arduboy2Core::safeMode()
 
 void Arduboy2Core::idle()
 {
-#if !defined(__SAMD51__)
+#if defined(__AVR__)
   SMCR = _BV(SE); // select idle mode and enable sleeping
   sleep_cpu();
   SMCR = 0; // disable sleeping
@@ -329,7 +329,7 @@ void Arduboy2Core::idle()
 
 void Arduboy2Core::bootPowerSaving()
 {
-#if !defined(__SAMD51__)
+#if defined(__AVR__)
   // disable Two Wire Interface (I2C) and the ADC
   // All other bits will be written with 0 so will be enabled
   PRR0 = _BV(PRTWI) | _BV(PRADC);
@@ -341,8 +341,8 @@ void Arduboy2Core::bootPowerSaving()
 // Shut down the display
 void Arduboy2Core::displayOff()
 {
-#if defined(__SAMD51__)
-    digitalWrite(TFT_LITE, LOW);
+#if defined(_ADAFRUIT_ARCADA_)
+  arcada.setBacklight(0);
 #else
   LCDCommandMode();
   SPItransfer(0xAE); // display off
@@ -368,7 +368,7 @@ uint8_t Arduboy2Core::height() { return HEIGHT; }
 
 void Arduboy2Core::paint8Pixels(uint8_t pixels)
 {
-#if defined(__SAMD51__)
+#if defined(_ADAFRUIT_ARCADA_)
   Serial.println("paint8pixels");
 #else
   SPItransfer(pixels);
@@ -539,7 +539,7 @@ void Arduboy2Core::flipVertical(bool flipped)
 // flip the display horizontally or set to normal
 void Arduboy2Core::flipHorizontal(bool flipped)
 {
-#ifdef __SAMD51__
+#if defined(_ADAFRUIT_ARCADA_)
   Serial.println("flipHorizontal");
 #else
   sendLCDCommand(flipped ? OLED_HORIZ_FLIPPED : OLED_HORIZ_NORMAL);
@@ -567,7 +567,7 @@ void Arduboy2Core::setRGBled(uint8_t red, uint8_t green, uint8_t blue)
   (void)red;    // parameter unused
   (void)green;  // parameter unused
   bitWrite(BLUE_LED_PORT, BLUE_LED_BIT, blue ? RGB_ON : RGB_OFF);
-#elif defined(__SAMD51__)
+#elif defined(_ADAFRUIT_ARCADA_)
   neopixel_color = (uint32_t)red << 16;
   neopixel_color |= (uint32_t)green << 8;
   neopixel_color |= (uint32_t)blue;
@@ -597,7 +597,7 @@ void Arduboy2Core::setRGBled(uint8_t color, uint8_t val)
   {
     bitWrite(BLUE_LED_PORT, BLUE_LED_BIT, val ? RGB_ON : RGB_OFF);
   }
-#elif defined(__SAMD51__)
+#elif defined(_ADAFRUIT_ARCADA_)
   if (color == RED_LED) {
     neopixel_color &= 0x00FFFF;
     neopixel_color |= (uint32_t)val << 16;
@@ -709,6 +709,7 @@ uint8_t Arduboy2Core::buttonsState()
 
 #elif defined(_ADAFRUIT_ARCADA_)
   buttons = arcada.readButtons();
+  Serial.println(buttons, HEX);
 #endif
 
   return buttons;
@@ -722,7 +723,7 @@ void Arduboy2Core::delayShort(uint16_t ms)
 
 void Arduboy2Core::exitToBootloader()
 {
-#if !defined(__SAMD51__)
+#if !defined(_ADAFRUIT_ARCADA_)
   cli();
   // set bootloader magic key
   // storing two uint8_t instead of one uint16_t saves an instruction
@@ -740,7 +741,7 @@ void Arduboy2Core::exitToBootloader()
 // Replacement main() that eliminates the USB stack code.
 // Used by the ARDUBOY_NO_USB macro. This should not be called
 // directly from a sketch.
-#if !defined(__SAMD51__) // not available for SAM chips
+#if defined(__AVR__) // not available for SAM chips
 void Arduboy2Core::mainNoUSB()
 {
   // disable USB

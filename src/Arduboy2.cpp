@@ -83,7 +83,7 @@ void Arduboy2Base::flashlight()
   sendLCDCommand(OLED_ALL_PIXELS_ON); // smaller than allPixelsOn()
   digitalWriteRGB(RGB_ON, RGB_ON, RGB_ON);
 
-#if !defined(ARDUBOY_CORE) && !defined(__SAMD51__) // for Arduboy core timer 0 should remain enabled
+#if !defined(ARDUBOY_CORE) && !defined(_ADAFRUIT_ARCADA_) // for Arduboy core timer 0 should remain enabled
   // prevent the bootloader magic number from being overwritten by timer 0
   // when a timer variable overlaps the magic number location, for when
   // flashlight mode is used for upload problem recovery
