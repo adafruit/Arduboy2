@@ -707,7 +707,6 @@ uint8_t Arduboy2Core::buttonsState()
 
 #elif defined(_ADAFRUIT_ARCADA_)
   buttons = arcada.readButtons();
-  Serial.println(buttons, HEX);
 #endif
 
   return buttons;
