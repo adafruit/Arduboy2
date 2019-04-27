@@ -100,6 +100,8 @@ void Arduboy2Core::boot()
     while(1);
   }
 
+  arcada.displayBegin();
+
   if (!arcada.createFrameBuffer(128, 64)) {
     Serial.println("Couldn't create framebuffer");
     while(1);
