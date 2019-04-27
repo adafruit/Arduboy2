@@ -105,6 +105,8 @@ void Arduboy2Core::boot()
     while(1);
   }
 
+  arcada.setBacklight(255);
+
   // Initialize flash library and check its chip ID.
   if (!arcada.filesysBegin()) {
     Serial.println("Error, failed to initialize filesys!");

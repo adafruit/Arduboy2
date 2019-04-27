@@ -16,7 +16,8 @@ AudioMixer4              mixer1;
 AudioOutputAnalogStereo  audioOut;
 AudioConnection          patchCord1(sine2, 0, mixer1, 1);
 AudioConnection          patchCord2(sine1, 0, mixer1, 0);
-AudioConnection          patchCord3(mixer1, audioOut);
+AudioConnection          patchCord3(mixer1, 0, audioOut, 0);
+AudioConnection          patchCord4(mixer1, 0, audioOut, 1);
 
 uint8_t BeepPin1::duration = 0;
 uint8_t BeepPin2::duration = 0;
@@ -24,11 +25,13 @@ uint8_t BeepPin2::duration = 0;
 void BeepPin1::begin()
 {
   AudioMemory(2);
+  arcada.enableSpeaker(true);
 }
 
 void BeepPin2::begin()
 {
   AudioMemory(2);
+  arcada.enableSpeaker(true);
 }
 
 void BeepPin1::tone(float freq)
@@ -43,16 +46,16 @@ void BeepPin2::tone(float freq)
 
 void BeepPin1::tone(float freq, uint8_t dur)
 {
-  arcada.enableSpeaker(true);
-  sine1.amplitude(1.0);
+  //Serial.printf("Tone1 %f Hz, %d dur\n", freq, dur);
+  sine1.amplitude(ARCADA_MAX_VOLUME);
   sine1.frequency(freq);
   duration = dur;
 }
 
 void BeepPin2::tone(float freq, uint8_t dur)
 {
-  arcada.enableSpeaker(true);
-  sine2.amplitude(1.0);
+  //Serial.printf("Tone2 %f Hz, %d dur\n", freq, dur);
+  sine2.amplitude(ARCADA_MAX_VOLUME);
   sine2.frequency(freq);
   duration = dur;
 }
@@ -61,7 +64,6 @@ void BeepPin1::timer()
 {
   if (duration && (--duration == 0)) {
     sine1.amplitude(0);
-    arcada.enableSpeaker(false);
   }
 }
 
@@ -69,20 +71,17 @@ void BeepPin2::timer()
 {
   if (duration && (--duration == 0)) {
     sine2.amplitude(0);
-    arcada.enableSpeaker(false);
   }
 }
 
 void BeepPin1::noTone()
 {
   sine1.amplitude(0);
-  arcada.enableSpeaker(false);
 }
 
 void BeepPin2::noTone()
 {
   sine2.amplitude(0);
-  arcada.enableSpeaker(false);
 }
 
 #elif !defined(AB_DEVKIT)
