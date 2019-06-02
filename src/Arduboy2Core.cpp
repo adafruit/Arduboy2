@@ -101,7 +101,7 @@ void Arduboy2Core::boot()
   }
 
   arcada.displayBegin();
-
+  arcada.fillScreen(0x4208); // dark gray
   if (!arcada.createFrameBuffer(128, 64)) {
     Serial.println("Couldn't create framebuffer");
     while(1);
@@ -112,7 +112,7 @@ void Arduboy2Core::boot()
   // Initialize flash library and check its chip ID.
   if (!arcada.filesysBegin()) {
     Serial.println("Error, failed to initialize filesys!");
-    while(1);
+    arcada.haltBox("No filesystem found! For QSPI flash, load CircuitPython. For SD cards, format with FAT");
   }
 
   // Check if a boot.py exists and print it out.
@@ -121,7 +121,7 @@ void Arduboy2Core::boot()
     File data = arcada.open("ARDUBOY.EEP", FILE_WRITE);
     if (!data) {
        Serial.println("Failed to create file?");
-       while (1);
+       arcada.haltBox("Unable to create ARDUBOY.EEP file");
     }
     Serial.println("Created");
     for (int i=0; i<1024; i++) {
@@ -520,7 +520,7 @@ void Arduboy2Core::allPixelsOn(bool on)
 {
 #ifdef _ADAFRUIT_ARCADA_
   if (on) 
-    arcada.fillScreen(0xFFFF);
+    arcada.fillScreen(0x00);
   else
     paintFramebuf();
 #else
