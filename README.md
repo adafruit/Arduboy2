@@ -1,4 +1,6 @@
-# Arduboy2 Library
+# Arduboy2 Library for Arcada
+
+**This is a port of Arduboy2 for Arcada boards such as PyBadge and PyGamer**
 
 The Arduboy2 library is maintained in a git repository hosted on [GitHub](https://github.com/) at:
 
