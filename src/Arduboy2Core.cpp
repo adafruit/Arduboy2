@@ -95,16 +95,20 @@ void Arduboy2Core::boot()
   bootPins();
 #ifdef _ADAFRUIT_ARCADA_
   Serial.begin(115200);
-  if (!arcada.begin()) {
+  delay(100);
+  if (!arcada.arcadaBegin()) {
     Serial.println("Couldn't start Arcada");
-    while(1);
+    while(1) yield();
   }
 
+  // If we are using TinyUSB we will have the filesystem show up!
+  arcada.filesysBeginMSD();
+
   arcada.displayBegin();
-  arcada.fillScreen(0x4208); // dark gray
+  arcada.display->fillScreen(0x4208); // dark gray
   if (!arcada.createFrameBuffer(128, 64)) {
     Serial.println("Couldn't create framebuffer");
-    while(1);
+    while(1) yield();
   }
 
   arcada.setBacklight(255);
@@ -486,7 +490,7 @@ void Arduboy2Core::paintScreen(uint8_t image[], bool clear)
 void Arduboy2Core::blank()
 {
 #ifdef _ADAFRUIT_ARCADA_
-  arcada.fillScreen(0x00);
+  arcada.display->fillScreen(0x00);
 #else
   for (int i = 0; i < (HEIGHT*WIDTH)/8; i++)
     SPItransfer(0x00);
@@ -508,7 +512,7 @@ void Arduboy2Core::sendLCDCommand(uint8_t command)
 void Arduboy2Core::invert(bool inverse)
 {
 #ifdef _ADAFRUIT_ARCADA_
-  arcada.invertDisplay(inverse);
+  arcada.display->invertDisplay(inverse);
 #else
   sendLCDCommand(inverse ? OLED_PIXELS_INVERTED : OLED_PIXELS_NORMAL);
 #endif
@@ -520,7 +524,7 @@ void Arduboy2Core::allPixelsOn(bool on)
 {
 #ifdef _ADAFRUIT_ARCADA_
   if (on) 
-    arcada.fillScreen(0x00);
+    arcada.display->fillScreen(0x00);
   else
     paintFramebuf();
 #else

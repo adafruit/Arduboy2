@@ -19,6 +19,8 @@ AudioConnection          patchCord2(sine1, 0, mixer1, 0);
 AudioConnection          patchCord3(mixer1, 0, audioOut, 0);
 AudioConnection          patchCord4(mixer1, 0, audioOut, 1);
 
+#define ARCADA_MAX_VOLUME 0.5
+
 uint8_t BeepPin1::duration = 0;
 uint8_t BeepPin2::duration = 0;
 
